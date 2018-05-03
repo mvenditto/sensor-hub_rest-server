@@ -6,6 +6,13 @@ Rest API service for https://github.com/mvenditto/sensor-hub.
 By default needs to be packaged in JAR named 'rest-server'. 
 If another name is needed, change it renaming resource/META-INF/spi.service.Service/{rest-service} file.
 
+## Configuration (server.conf)
+
+key | default | description
+----|---------|-------------
+port| 8081 | server port
+context| / | http://{hostname:port}/{**context**}/...
+
 ## REST API overview
 **NB** All urls are prefixed with: *http://{hostname:port}/{context}*
 
