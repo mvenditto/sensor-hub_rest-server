@@ -38,89 +38,93 @@ url | action
 #### GET /services
 ```json
 [
-  { 
-    "name":"rest-server",
-    "version":"0.0.1",
-    "description":"service description",
-    "rootDir":"..\\ext\\services\\rest-server"
-   }
+  	{ 
+    		"name":"rest-server",
+    		"version":"0.0.1",
+   		"description":"service description",
+    		"rootDir":"..\\ext\\services\\rest-server"
+   	}
 ]
 ```
 
 #### GET /drivers
 ```json
 [
-  {
-    "name": "driver 1",
-    "version": "0.0.1",
-    "description": "driver description",
-    "descriptorClassName": "driver.DriverDescriptor1"
-   }
+	{
+    		"name": "driver 1",
+    		"version": "0.0.1",
+    		"description": "driver description",
+    		"descriptorClassName": "driver.DriverDescriptor1"
+   	}
 ]
 ```
 
 #### GET /devices
 ```json 
 [
-  {
-    "id": 0,
-    "name": "device0",
-    "description": "device description",
-    "metadataEncoding": "application/pdf",
-    "metadata": "www.example.org/schema.pdf",
-    "driverName": "driver 1"
-   }
+	{
+    		"id": 0,
+    		"name": "device0",
+    		"description": "device description",
+    		"metadataEncoding": "application/pdf",
+    		"metadata": "www.example.org/schema.pdf",
+    		"driverName": "driver 1"
+   	}
 ]
 ```
 
 #### GET /dataStreams
 ```json
 [
-  {
-    "name": "temperature",
-    "description": "temperature datastream",
-    "observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
-    "observedProperty": 
-     {
-       "name": "temperature",
-       "definition": "http://mmisw.org/ont/cf/parameter/air_temperature",
-       "description": "temperature property"
-     },
-    "unitOfMeasurement":
-    {
-       "name": "DegreesCelsius",
-       "definition": "http://download.hl7.de/documents/ucum/ucumdata.html",
-       "symbol": "Cel"
-    },
-    "sensorId": 0
-  }
+	{
+    		"name": "temperature",
+    		"description": "temperature datastream",
+    		"observationType": "http://www.opengis.net/def/observationType/OGC-OM/2.0/OM_Measurement",
+    		"observedProperty": 
+     		{
+       			"name": "temperature",
+       			"definition": "http://mmisw.org/ont/cf/parameter/air_temperature",
+       			"description": "temperature property"
+     		},
+    		"unitOfMeasurement":
+    		{
+       			"name": "DegreesCelsius",
+       			"definition": "http://download.hl7.de/documents/ucum/ucumdata.html",
+       			"symbol": "Cel"
+    		},
+    		"sensorId": 0
+  	}
 ]
 ```
 
 #### GET /observedProperties
 ```json
 [
-  {
-    "name": "temperature",
-    "definition": "http://mmisw.org/ont/cf/parameter/air_temperature",
-    "description":"temperature property"
-   }
+	{
+    		"name": "temperature",
+    		"definition": "http://mmisw.org/ont/cf/parameter/air_temperature",
+    		"description":"temperature property"
+   	}
 ]
 ```
 #### GET /dataStreams/{dataStreamId}
 ```json
 {
-	"phenomenonTime": {
+	"phenomenonTime": 
+	{
 		"secondsEpoch": 1525439104
 	},
-	"resultTime": {
+	"resultTime": 
+	{
 		"secondsEpoch": 1525439104
 	},
 	"result": "42",
-	"featureOfInterest": {
+	"featureOfInterest": 
+	{
 		"name": "helmet",
 		"description": "fireman helmet",
-		"encodingType": {
+		"encodingType": 
+		{
 			"name": "application/vnd.geo+json"
 		},
 		"feature": { "TODO" }
