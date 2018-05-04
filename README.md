@@ -24,6 +24,7 @@ url | method | action
 /devices/:id | DELETE | delete *device* with specified 'id'
 /devices | POST | create a new *device* with a specified *driver*
 /dataStreams | GET | all *datastreams*
+/dataStreams | GET | an *observation* from this datastream (*{datastream.sensorId}_{datastream.name}*)
 /observedProperties | GET | all *observed properties*
 
 #### Websockets
@@ -31,7 +32,7 @@ url | method | action
 
 url | action
 --- | ------
-/dataStreams/:id | a stream of *observation* from this *datastream*, ':id' is the 'datastream id', generally *{datastream.sensor.id}_{datastream.name}*
+/dataStreams/:id | a stream of *observation* from this *datastream*, ':id' is the 'datastream id', generally  (*{datastream.sensorId}_{datastream.name}*)
 
 ### Responses
 
