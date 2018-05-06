@@ -21,7 +21,10 @@ url | method | action
 /services | GET | all *services* running on this node
 /drivers | GET | all available *drivers* on this node
 /devices | GET | all *devices* instanced on this node
+/devices/tasks | GET | get a map of all *tasks* for each device
+/devices/:id/tasks | GET | get all *tasks* supported by a specific device
 /devices/:id | DELETE | delete *device* with specified 'id'
+/devices/:id/tasks/:task | PUT | execute a *task* for the specified device
 /devices | POST | create a new *device* with a specified *driver*
 /dataStreams | GET | all *datastreams*
 /dataStreams/:id | GET | an *observation* from this datastream (*{datastream.sensorId}_{datastream.name}*)
@@ -71,6 +74,60 @@ url | action
     		"metadata": "www.example.org/schema.pdf",
     		"driverName": "driver 1"
    	}
+]
+```
+
+#### GET /devices/tasks
+```json
+[
+	{
+		"deviceId": 0,
+		"supportedTasks": [
+			{
+				"type": "object",
+				"properties":
+				{
+					"message": 
+					{
+						"type": "string",
+						"minLength": 1
+					}
+				},
+				"id": "#taskid",
+				"additionalProperties": false,
+				"title": "demo-task",
+				"required": 
+				[
+					"message"
+				],
+				"description": "a demo task"
+			}
+		]
+	}
+]
+```
+
+#### GET /devices/:id/tasks
+```json
+[
+	{
+		"type": "object",
+		"properties": 
+		{
+			"message": {
+				"type": "string",
+				"minLength": 1
+			}
+		},
+		"id": "#demotask",
+		"additionalProperties": false,
+		"title": "demo-task",
+		"required": 
+		[
+			"message"
+		],
+		"description": "a demo task"
+	}
 ]
 ```
 
@@ -144,3 +201,6 @@ url | action
 	"driverName": "driver 1"
 }
 ```
+
+#### PUT {task-schema} /devices/:id/tasks/:task
+json input validated against *task* json schema
