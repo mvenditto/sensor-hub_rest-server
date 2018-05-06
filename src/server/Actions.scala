@@ -2,14 +2,17 @@ package server
 
 import java.net.URI
 
-import api.internal.DriversManager
+import api.internal.{DeviceController, DriversManager, TaskingSupport}
 import api.sensors.DevicesManager
 import api.sensors.Sensors.Encodings
 import api.services.ServicesManager
+import io.reactivex.Maybe
 import org.json4s.jackson.Serialization.write
+import org.json4s.jackson.JsonMethods.compact
 import utils.CustomSeriDeseri
 
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Future
+import scala.util.Try
 
 //noinspection TypeAnnotation
 object Actions {
@@ -70,6 +73,25 @@ object Actions {
   def getDevices: String =
     write(devm.devices().map(d =>
       DeviceMetadataWithId(d.id, d.name, d.description, d.encodingType.name, d.metadata.toString, d.driver.metadata.name)))
+
+  def getDeviceTasks(id: Int): String =
+    write(devm.devices().filter(_.id == id).flatMap(_.tasks).map(t => compact(t.taskingParameters)))
+
+  def getAllTasks: String =
+    write(devm.devices().map(dev => Map("deviceId" -> dev.id, "supportedTasks" -> dev.tasks.map(t => t.taskingParameters))))
+
+  def putDeviceTask(id: Int, taskName: String, json: String): Either[Maybe[String], String] = {
+    devm.devices().find(_.id == id) match {
+      case Some(dev) =>
+        dev.driver.controller match {
+          case ctrl: DeviceController with TaskingSupport =>
+            Left(ctrl.send(taskName, json))
+          case _ =>
+            Right(s"device $id doesn't support tasking.")
+        }
+      case _ => Right(s"no device for id: $id")
+    }
+  }
 
   def createDevice(dev: DeviceMetadata): Option[String] = {
     DriversManager.instanceDriver(dev.driverName) match {

@@ -1,14 +1,18 @@
 package server
 
 import java.nio.file.Paths
+import java.util.concurrent.{CompletableFuture, Executors}
 
 import api.events.SensorsHubEvents.DeviceCreated
 import api.sensors.DevicesManager
 import api.sensors.Sensors.DataStream
-import io.javalin.Javalin
+import io.javalin.{Javalin, LogLevel}
 import io.javalin.embeddedserver.Location
 import io.javalin.embeddedserver.jetty.websocket.{WebSocketConfig, WebSocketHandler, WsSession}
+import io.reactivex.{Maybe, MaybeObserver}
+import io.reactivex.disposables.Disposable
 import org.json4s.jackson.JsonMethods._
+import org.slf4j.LoggerFactory
 import rx.lang.scala.Subscription
 import server.Actions._
 import utils.CustomSeriDeseri.fmt
@@ -39,6 +43,8 @@ case class DataStreamWebSocket(ds: DataStream) extends WebSocketConfig {
 
 object JavalinServer extends App {
 
+  private[this] val logger = LoggerFactory.getLogger("sh.rest-server")
+
   case class ServerConfig(context: String, port: Int)
 
   private val cfg = loadConfigFromFiles[ServerConfig](Seq(Paths.get(args.head, "server.conf")))
@@ -48,6 +54,7 @@ object JavalinServer extends App {
     .enableCorsForAllOrigins()
     .contextPath(cfg.context)
     .enableStaticFiles(Paths.get(args.head, "public/").toString, Location.EXTERNAL)
+    .requestLogLevel(LogLevel.OFF)
     .port(cfg.port)
 
   server.get("/drivers", ctx => ctx.result(getDrivers))
@@ -56,7 +63,30 @@ object JavalinServer extends App {
   server.get("/observedProperties", ctx => ctx.result(getObservedProperties))
   server.get("/services", ctx => ctx.result(getServices))
   server.get("/devices", ctx => ctx.result(getDevices))
+  server.get("/devices/tasks", ctx => ctx.result(getAllTasks))
+  server.get("/devices/:id/tasks", ctx => ctx.result(getDeviceTasks(ctx.param("id").toInt)))
   server.get("/dataStreams/:id", ctx => getDataStreamObs(ctx.param("id")).fold(ctx.status(404))(ctx.result))
+
+  server.put("/devices/:id/tasks/:task", ctx => {
+    val id = ctx.param("id")
+    val task = ctx.param("task")
+    Try(id.toInt).toOption.fold
+    {
+      ctx.status(300)
+      ctx.result(s"cannot parse id: $id")
+    }
+    {
+      id => {
+       putDeviceTask(id, task, ctx.body()) match {
+         case Left(maybe) =>
+           ctx.result(MaybeCompletableFuture(maybe))
+         case Right(err) =>
+           ctx.status(300)
+           ctx.result(err)
+       }
+      }
+    }
+  })
 
   server.post("/devices", ctx => {
     parseOpt(ctx.body()).flatMap(_.extractOpt[DeviceMetadata]) match {
@@ -89,5 +119,18 @@ object JavalinServer extends App {
   def stop(): Unit = server.stop()
 
   def restart(): Unit = server.stop(); server.start()
+
+  case class MaybeCompletableFuture(maybe: Maybe[String]) extends CompletableFuture[String] {
+
+    private[this] val future = this
+
+    maybe.subscribe(new MaybeObserver[String] {
+      override def onError(e: Throwable): Unit = future.complete(e.getMessage)
+      override def onComplete(): Unit = future.complete("")
+      override def onSubscribe(d: Disposable): Unit = {}
+      override def onSuccess(t: String): Unit = future.complete(t)
+    })
+
+  }
 
 }
