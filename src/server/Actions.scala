@@ -75,7 +75,7 @@ object Actions {
       DeviceMetadataWithId(d.id, d.name, d.description, d.encodingType.name, d.metadata.toString, d.driver.metadata.name)))
 
   def getDeviceTasks(id: Int): String =
-    write(devm.devices().filter(_.id == id).flatMap(_.tasks).map(t => compact(t.taskingParameters)))
+    write(devm.devices().filter(_.id == id).flatMap(_.tasks).map(t => t.taskingParameters))
 
   def getAllTasks: String =
     write(devm.devices().map(dev => Map("deviceId" -> dev.id, "supportedTasks" -> dev.tasks.map(t => t.taskingParameters))))
