@@ -25,6 +25,7 @@ url | method | action
 /devices/:id/tasks | GET | get all *tasks* supported by a specific device
 /devices/:id | DELETE | delete *device* with specified 'id'
 /devices/:id/tasks/:task | PUT | execute a *task* for the specified device
+/devices/tasks/queue/:id | GET | poll the result of the specified *task*
 /devices | POST | create a new *device* with a specified *driver*
 /dataStreams | GET | all *datastreams*
 /dataStreams/:id | GET | an *observation* from this datastream (*{datastream.sensorId}_{datastream.name}*)
@@ -130,6 +131,13 @@ url | action
 	}
 ]
 ```
+#### GET /devices/tasks/queue/:id
+```json
+	{
+		"status": "pending|ready",
+		"result": "<some json-encoded string>"
+	}
+```
 
 #### GET /dataStreams
 ```json
@@ -203,4 +211,4 @@ url | action
 ```
 
 #### PUT {task-schema} /devices/:id/tasks/:task
-json input validated against *task* json schema
+returns a *202 accepted* response with *Location* header setted to the link to the task result (eg. */devices/tasks/queue/0*). 
