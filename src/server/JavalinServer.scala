@@ -18,7 +18,11 @@ import server.Actions._
 import utils.CustomSeriDeseri.fmt
 import pureconfig._
 
-import scala.util.Try
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
+import scala.util.{Failure, Success, Try}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 case class DataStreamWebSocket(ds: DataStream) extends WebSocketConfig {
 
@@ -50,6 +54,8 @@ object JavalinServer extends App {
   private val cfg = loadConfigFromFiles[ServerConfig](Seq(Paths.get(args.head, "server.conf")))
     .getOrElse(ServerConfig("/", 8081))
 
+  private val selfAddress = s"http://localhost:${cfg.port}${cfg.context}"
+
   val server = Javalin.create()
     .enableCorsForAllOrigins()
     .contextPath(cfg.context)
@@ -67,6 +73,51 @@ object JavalinServer extends App {
   server.get("/devices/:id/tasks", ctx => ctx.result(getDeviceTasks(ctx.param("id").toInt)))
   server.get("/dataStreams/:id", ctx => getDataStreamObs(ctx.param("id")).fold(ctx.status(404))(ctx.result))
 
+  server.get("/devices/tasks/queue/:id", ctx => {
+    val id = ctx.param("id")
+    Try(id.toLong).toOption.fold
+    {
+      ctx.status(300)
+      ctx.result(s"cannot parse id: $id")
+    }
+    {
+      id => {
+        val task = getTaskResult(id)
+        task match {
+          case Some(future) =>
+            val completed = future.isCompleted
+            if (completed) {
+              ctx.header("DataType", "application/json")
+              val s = Await.result(future, Duration.Inf)
+              ctx.result(s"""{"status":"ready", "result":${compact(parse(s))}}""")
+            } else ctx.result(s"""{"status":"pending"}""")
+
+            ctx.status(200)
+          case _ =>
+            ctx.status(404)
+        }
+      }
+    }
+  })
+
+  server.put("/devices/:id/tasks/:task", ctx => {
+    val id = ctx.param("id")
+    val task = ctx.param("task")
+    Try(id.toInt).toOption.fold
+    {
+      ctx.status(300)
+      ctx.result(s"cannot parse id: $id")
+    }
+    {
+      id => {
+        val taskId = putDeviceTask(id, task, ctx.body())
+        ctx.header("Location", s"${selfAddress}devices/tasks/queue/$taskId")
+        ctx.status(202)
+      }
+    }
+  })
+
+  /*
   server.put("/devices/:id/tasks/:task", ctx => {
     val id = ctx.param("id")
     val task = ctx.param("task")
@@ -86,7 +137,7 @@ object JavalinServer extends App {
        }
       }
     }
-  })
+  })*/
 
   server.post("/devices", ctx => {
     parseOpt(ctx.body()).flatMap(_.extractOpt[DeviceMetadata]) match {
@@ -120,6 +171,7 @@ object JavalinServer extends App {
 
   def restart(): Unit = server.stop(); server.start()
 
+  /*
   case class MaybeCompletableFuture(maybe: Maybe[String]) extends CompletableFuture[String] {
 
     private[this] val future = this
@@ -131,6 +183,6 @@ object JavalinServer extends App {
       override def onSuccess(t: String): Unit = future.complete(t)
     })
 
-  }
+  }*/
 
 }
