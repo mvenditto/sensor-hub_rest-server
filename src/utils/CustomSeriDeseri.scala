@@ -3,11 +3,13 @@ package utils
 import java.net.URI
 import java.time.Instant
 
+import api.events.SensorsHubEvents.SensorsHubEvent
 import api.sensors.DevicesManager
 import api.sensors.Sensors.{DataStream, ObservationType, ObservedProperty, UnitOfMeasurement}
-import org.json4s.JsonAST.{JField, JInt, JObject, JString}
+import org.json4s.JsonAST._
 import org.json4s.JsonDSL._
 import org.json4s.{CustomSerializer, Extraction}
+import org.json4s.jackson.JsonMethods.compact
 
 object CustomSeriDeseri {
 
@@ -88,5 +90,13 @@ object CustomSeriDeseri {
             JField("driver", Extraction.decompose(ds.sensor.driver.metadata)) ::
             JField("description", JString(ds.sensor.description)) :: Nil)) :: Nil)
   }))
+
+  def evtToJson(evt: SensorsHubEvent): String = compact(
+    JObject(
+      JField("name", JString(evt.getClass.getName)) ::
+      JField("timeStamp", JLong(evt.timestamp.getEpochSecond)) ::
+      JField("event", Extraction.decompose(evt)) ::
+      Nil
+    ))
 
 }

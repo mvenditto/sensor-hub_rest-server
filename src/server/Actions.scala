@@ -3,7 +3,6 @@ package server
 import java.net.URI
 import java.util.concurrent.atomic.AtomicLong
 
-import api.devices.Devices.Device
 import api.internal.{DeviceController, DriversManager, TaskingSupport}
 import api.sensors.DevicesManager
 import api.sensors.Sensors.Encodings
@@ -87,20 +86,6 @@ object Actions {
 
   def getAllTasks: String =
     write(devm.devices().map(dev => Map("deviceId" -> dev.id, "supportedTasks" -> dev.tasks.map(t => t.taskingParameters))))
-
-  /*
-  def putDeviceTask(id: Int, taskName: String, json: String): Either[Maybe[String], String] = {
-    devm.devices().find(_.id == id) match {
-      case Some(dev) =>
-        dev.driver.controller match {
-          case ctrl: DeviceController with TaskingSupport =>
-            Left(ctrl.send(taskName, json))
-          case _ =>
-            Right(s"device $id doesn't support tasking.")
-        }
-      case _ => Right(s"no device for id: $id")
-    }
-  }*/
 
   def putDeviceTask(devId: Int, taskName: String, json: String): Long = {
     val id = newId()

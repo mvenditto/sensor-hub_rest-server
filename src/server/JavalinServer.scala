@@ -1,47 +1,46 @@
 package server
 
 import java.nio.file.Paths
-import java.util.concurrent.{CompletableFuture, Executors}
 
-import api.events.SensorsHubEvents.DeviceCreated
+import api.events.EventBus
+import api.events.SensorsHubEvents.{DeviceCreated, SensorsHubEvent}
 import api.sensors.DevicesManager
 import api.sensors.Sensors.DataStream
 import io.javalin.{Javalin, LogLevel}
 import io.javalin.embeddedserver.Location
 import io.javalin.embeddedserver.jetty.websocket.{WebSocketConfig, WebSocketHandler, WsSession}
-import io.reactivex.{Maybe, MaybeObserver}
-import io.reactivex.disposables.Disposable
 import org.json4s.jackson.JsonMethods._
 import org.slf4j.LoggerFactory
 import rx.lang.scala.Subscription
 import server.Actions._
 import utils.CustomSeriDeseri.fmt
 import pureconfig._
+import utils.CustomSeriDeseri
+import ws.WsObservable
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
+import scala.collection.concurrent.TrieMap
 import scala.concurrent.ExecutionContext.Implicits.global
 
 case class DataStreamWebSocket(ds: DataStream) extends WebSocketConfig {
 
-  private[this] var sessions = Map.empty[String, Subscription]
+  private[this] var sessions = TrieMap.empty[String, Subscription]
 
   override def configure(ws: WebSocketHandler): Unit = {
     ws.onConnect((session: WsSession) => {
       val sub = ds.observable.subscribe(obs => session.getRemote.sendString(obs.result.toString))
-      sessions = sessions ++ Map(session.getId -> sub)
+      sessions.put(session.getId, sub)
     })
 
     ws.onMessage((session: WsSession, msg: String) => println(msg))
 
     ws.onError((session: WsSession, throwable: Throwable) => println(throwable.getMessage))
 
-    ws.onClose((session: WsSession, statusCode: Int, reason: String) => {
-      sessions.get(session.getId).foreach(_.unsubscribe())
-      sessions = sessions.filter(_._1 != session.getId)
-    })
+    ws.onClose((session: WsSession, statusCode: Int, reason: String) =>
+      sessions.remove(session.getId).foreach(_.unsubscribe()))
   }
 }
 
@@ -117,28 +116,6 @@ object JavalinServer extends App {
     }
   })
 
-  /*
-  server.put("/devices/:id/tasks/:task", ctx => {
-    val id = ctx.param("id")
-    val task = ctx.param("task")
-    Try(id.toInt).toOption.fold
-    {
-      ctx.status(300)
-      ctx.result(s"cannot parse id: $id")
-    }
-    {
-      id => {
-       putDeviceTask(id, task, ctx.body()) match {
-         case Left(maybe) =>
-           ctx.result(MaybeCompletableFuture(maybe))
-         case Right(err) =>
-           ctx.status(300)
-           ctx.result(err)
-       }
-      }
-    }
-  })*/
-
   server.post("/devices", ctx => {
     parseOpt(ctx.body()).flatMap(_.extractOpt[DeviceMetadata]) match {
       case Some(dev) => createDevice(dev).fold(ctx.status(300))(ctx.result)
@@ -157,32 +134,20 @@ object JavalinServer extends App {
     .foreach(ds => server.ws(s"/${ds.sensor.id+"_"+ds.name}", DataStreamWebSocket(ds)))
 
 
-  DevicesManager.events.subscribe(evt => evt match {
+  EventBus.events.subscribe(evt => evt match {
     case DeviceCreated(dev) =>
       dev.dataStreams.foreach(ds =>
         server.ws(s"/${ds.sensor.id+"_"+ds.name}", DataStreamWebSocket(ds)))
     case _ => ()
   })
 
+  server.ws("/audit", WsObservable[SensorsHubEvent](EventBus.events,
+    e => CustomSeriDeseri.evtToJson(e)))
 
   def start(): Unit = server.start()
 
   def stop(): Unit = server.stop()
 
   def restart(): Unit = server.stop(); server.start()
-
-  /*
-  case class MaybeCompletableFuture(maybe: Maybe[String]) extends CompletableFuture[String] {
-
-    private[this] val future = this
-
-    maybe.subscribe(new MaybeObserver[String] {
-      override def onError(e: Throwable): Unit = future.complete(e.getMessage)
-      override def onComplete(): Unit = future.complete("")
-      override def onSubscribe(d: Disposable): Unit = {}
-      override def onSuccess(t: String): Unit = future.complete(t)
-    })
-
-  }*/
 
 }

@@ -11,6 +11,8 @@ class RestServerService extends Service {
     JavalinServer.start()
   }
 
+  override def start(): Unit = JavalinServer.start()
+
   override def restart(): Unit = JavalinServer.restart()
 
   override def dispose(): Unit = JavalinServer.stop()
