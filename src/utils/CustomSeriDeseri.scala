@@ -14,7 +14,7 @@ import org.json4s.jackson.JsonMethods.compact
 object CustomSeriDeseri {
 
   implicit val fmt = org.json4s.DefaultFormats ++
-    Seq(
+    Traversable(
       new InstantSerializer(),
       new URISerializer(),
       new ObservedPropertySerializer(),
@@ -74,7 +74,7 @@ object CustomSeriDeseri {
         observationType = ObservationType((json \ "observationType").extract[String]),
         observedProperty = (json \ "observedProperty").extract[ObservedProperty],
         sensor = DevicesManager.getDevice((json \ "sensor_id").extract[Int]).orNull, //TODO not working, needs fix!
-        procedure = () => null,
+        procedure = (ds: DataStream) => null,
         unitOfMeasurement = (json \ "unitOfMeasurement").extract[UnitOfMeasurement])
   }, {
     case ds: DataStream =>
@@ -94,7 +94,7 @@ object CustomSeriDeseri {
   def evtToJson(evt: SensorsHubEvent): String = compact(
     JObject(
       JField("name", JString(evt.getClass.getName)) ::
-      JField("timeStamp", JLong(evt.timestamp.getEpochSecond)) ::
+      JField("timeStamp", JLong(evt.timestamp)) ::
       JField("event", Extraction.decompose(evt)) ::
       Nil
     ))

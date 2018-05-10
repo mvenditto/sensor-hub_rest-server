@@ -68,7 +68,7 @@ object Actions {
         .withFilter(_.id == sensorId)
         .flatMap(_.dataStreams)
         .find(_.name == dsName)
-        .map(ds => write(ds.procedure()))
+        .map(ds => write(ds.procedure(ds)))
         .get
     }.toOption
   }
@@ -117,17 +117,15 @@ object Actions {
     DriversManager.instanceDriver(dev.driverName) match {
       case Some(drv) =>
         val tryCreate = Try {
-
           dev.cfgPath.fold(
             dev.cfgString.foreach(cfg => drv.config.configureRaw(cfg)))(cfg => drv.config.configure(cfg))
-
           drv.controller.init()
           drv.controller.start()
           DevicesManager.createDevice(dev.name, dev.description, Encodings.PDF, new URI(dev.metadata), drv)
         }
-
         tryCreate.map(d => s"""{"device_id": "${d.id}"}""").toOption
-      case _ => None
+      case _ =>
+        None
     }
   }
 
