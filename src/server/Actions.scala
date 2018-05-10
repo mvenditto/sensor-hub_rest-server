@@ -35,7 +35,9 @@ object Actions {
     description: String,
     metadataEncoding: String,
     metadata: String,
-    driverName: String
+    driverName: String,
+    cfgString: Option[String],
+    cfgPath: Option[String]
   )
 
   case class DeviceMetadataWithId(
@@ -115,6 +117,10 @@ object Actions {
     DriversManager.instanceDriver(dev.driverName) match {
       case Some(drv) =>
         val tryCreate = Try {
+
+          dev.cfgPath.fold(
+            dev.cfgString.foreach(cfg => drv.config.configureRaw(cfg)))(cfg => drv.config.configure(cfg))
+
           drv.controller.init()
           drv.controller.start()
           DevicesManager.createDevice(dev.name, dev.description, Encodings.PDF, new URI(dev.metadata), drv)
