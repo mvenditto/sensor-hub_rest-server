@@ -9,6 +9,8 @@ import api.sensors.Sensors.DataStream
 import io.javalin.{Javalin, LogLevel}
 import io.javalin.embeddedserver.Location
 import io.javalin.embeddedserver.jetty.websocket.{WebSocketConfig, WebSocketHandler, WsSession}
+import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import org.json4s.jackson.JsonMethods._
 import org.slf4j.LoggerFactory
 import rx.lang.scala.Subscription
@@ -27,11 +29,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 case class DataStreamWebSocket(ds: DataStream) extends WebSocketConfig {
 
-  private[this] var sessions = TrieMap.empty[String, Subscription]
+  private[this] var sessions = TrieMap.empty[String, Disposable]
 
   override def configure(ws: WebSocketHandler): Unit = {
     ws.onConnect((session: WsSession) => {
-      val sub = ds.observable.subscribe(obs => session.getRemote.sendString(obs.result.toString))
+      val sub =
+        ds.observable
+          .subscribeOn(Schedulers.io())
+          .subscribe(obs => session.getRemote.sendString(obs.result.toString))
       sessions.put(session.getId, sub)
     })
 
@@ -40,7 +45,7 @@ case class DataStreamWebSocket(ds: DataStream) extends WebSocketConfig {
     ws.onError((session: WsSession, throwable: Throwable) => println(throwable.getMessage))
 
     ws.onClose((session: WsSession, statusCode: Int, reason: String) =>
-      sessions.remove(session.getId).foreach(_.unsubscribe()))
+      sessions.remove(session.getId).foreach(_.dispose()))
   }
 }
 
@@ -134,7 +139,9 @@ object JavalinServer extends App {
     .foreach(ds => server.ws(s"/${ds.sensor.id+"_"+ds.name}", DataStreamWebSocket(ds)))
 
 
-  EventBus.events.subscribe(evt => evt match {
+  EventBus.events
+    .subscribeOn(Schedulers.io())
+    .subscribe(evt => evt match {
     case DeviceCreated(dev) =>
       dev.dataStreams.foreach(ds =>
         server.ws(s"/${ds.sensor.id+"_"+ds.name}", DataStreamWebSocket(ds)))
