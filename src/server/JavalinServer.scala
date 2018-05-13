@@ -91,9 +91,16 @@ object JavalinServer extends App {
           case Some(future) =>
             val completed = future.isCompleted
             if (completed) {
+              println(future)
               ctx.header("DataType", "application/json")
               val s = Await.result(future, Duration.Inf)
-              ctx.result(s"""{"status":"ready", "result":${compact(parse(s))}}""")
+              println("res: ", s)
+
+              val res = new StringBuilder("""{"status":"ready"""")
+              if (s.isEmpty) res append "}"
+              else res append s""","result":${compact(parse(s))}}"""
+              ctx.result(res.toString())
+
             } else ctx.result(s"""{"status":"pending"}""")
 
             ctx.status(200)

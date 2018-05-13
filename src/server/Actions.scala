@@ -9,12 +9,14 @@ import api.sensors.Sensors.Encodings
 import api.services.ServicesManager
 import io.reactivex.{Maybe, MaybeEmitter}
 import org.json4s.jackson.Serialization.write
-import utils.CustomSeriDeseri
+import utils.{CustomSeriDeseri, StringUtils}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import scala.collection.concurrent
+
+import StringUtils.escape
 
 //noinspection TypeAnnotation
 object Actions {
@@ -104,7 +106,15 @@ object Actions {
         Maybe.create[String]((emitter: MaybeEmitter[String]) =>
         emitter.onError(new IllegalArgumentException(s"no device for id: $devId")))
     }
-    val future: Future[String] = Future(task.toSingle("").toFuture.get)
+
+    val future: Future[String] = Future {
+      Try(task.blockingGet("")) match {
+        case Success(result) => result
+        case Failure(err) => s"""{"error": "${escape(err.getMessage)}"}"""
+      }
+    }
+
+    //val future: Future[String] = Future(task.toSingle("").toFuture.get)
     tasksQueue.put(id, future)
     id
   }
