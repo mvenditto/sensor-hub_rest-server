@@ -54,6 +54,9 @@ object Actions {
   def getObservedProperties: String =
     write(devm.devices().flatMap(_.dataStreams.map(_.observedProperty)).toSet)
 
+  def getFeaturesOfInterest: String =
+    write(devm.devices().flatMap(_.dataStreams.map(_.featureOfInterest)).toSet)
+
   def getUnitsOfMeasurement: String =
     write(devm.devices().flatMap(_.dataStreams.map(_.unitOfMeasurement)).toSet)
 

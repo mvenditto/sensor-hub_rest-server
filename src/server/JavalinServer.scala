@@ -71,6 +71,7 @@ object JavalinServer extends App {
   server.get("/unitsOfMeasurement", ctx => ctx.result(getUnitsOfMeasurement))
   server.get("/dataStreams", ctx => ctx.result(getDataStreams))
   server.get("/observedProperties", ctx => ctx.result(getObservedProperties))
+  server.get("/featuresOfInterest", ctx => ctx.result(getFeaturesOfInterest))
   server.get("/services", ctx => ctx.result(getServices))
   server.get("/devices", ctx => ctx.result(getDevices))
   server.get("/devices/tasks", ctx => ctx.result(getAllTasks))

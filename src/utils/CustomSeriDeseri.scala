@@ -5,7 +5,7 @@ import java.time.Instant
 
 import api.events.SensorsHubEvents.SensorsHubEvent
 import api.sensors.DevicesManager
-import api.sensors.Sensors.{DataStream, ObservationType, ObservedProperty, UnitOfMeasurement}
+import api.sensors.Sensors._
 import org.json4s.JsonAST._
 import org.json4s.JsonDSL._
 import org.json4s.{CustomSerializer, Extraction}
@@ -13,8 +13,7 @@ import org.json4s.jackson.JsonMethods.compact
 
 object CustomSeriDeseri {
 
-  implicit val fmt = org.json4s.DefaultFormats ++
-    Traversable(
+  implicit val fmt = org.json4s.DefaultFormats ++ Traversable(
       new InstantSerializer(),
       new URISerializer(),
       new ObservedPropertySerializer(),
@@ -71,6 +70,7 @@ object CustomSeriDeseri {
       DataStream(
         name = (json \ "name").extract[String],
         description = (json \ "description").extract[String],
+        featureOfInterest = (json \ "featureOfInterest").extract[FeatureOfInterest],
         observationType = ObservationType((json \ "observationType").extract[String]),
         observedProperty = (json \ "observedProperty").extract[ObservedProperty],
         sensor = DevicesManager.getDevice((json \ "sensor_id").extract[Int]).orNull, //TODO not working, needs fix!
@@ -81,6 +81,7 @@ object CustomSeriDeseri {
       JObject(
           JField("name", JString(ds.name)) ::
           JField("description", JString(ds.description)) ::
+          JField("featureOfInterest", Extraction.decompose(ds.featureOfInterest)) ::
           JField("observationType", JString(ds.observationType.name)) ::
           JField("observedProperty", Extraction.decompose(ds.observedProperty)) ::
           JField("unitOfMeasurement", Extraction.decompose(ds.unitOfMeasurement)) ::
