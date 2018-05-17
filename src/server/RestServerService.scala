@@ -15,4 +15,5 @@ class RestServerService extends Service {
 
   override def dispose(): Unit = JavalinServer.stop()
 
+  override def stop(): Unit = JavalinServer.stop()
 }

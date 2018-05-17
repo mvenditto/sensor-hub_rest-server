@@ -13,7 +13,6 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import org.json4s.jackson.JsonMethods._
 import org.slf4j.LoggerFactory
-import rx.lang.scala.Subscription
 import server.Actions._
 import utils.CustomSeriDeseri.fmt
 import pureconfig._
@@ -29,7 +28,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 case class DataStreamWebSocket(ds: DataStream) extends WebSocketConfig {
 
-  private[this] var sessions = TrieMap.empty[String, Disposable]
+  private[this] val sessions = TrieMap.empty[String, Disposable]
 
   override def configure(ws: WebSocketHandler): Unit = {
     ws.onConnect((session: WsSession) => {
