@@ -5,18 +5,17 @@ import java.util.concurrent.atomic.AtomicLong
 
 import api.internal.{DeviceController, DriversManager, TaskingSupport}
 import api.sensors.DevicesManager
-import api.sensors.Sensors.Encodings
+import api.sensors.Sensors.{DataStreamCustomProps, Encodings}
 import api.services.ServicesManager
 import io.reactivex.{Maybe, MaybeEmitter}
 import org.json4s.jackson.Serialization.write
+import utils.StringUtils.escape
 import utils.{CustomSeriDeseri, StringUtils}
 
+import scala.collection.concurrent
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
-import scala.collection.concurrent
-
-import StringUtils.escape
 
 //noinspection TypeAnnotation
 object Actions {
@@ -39,7 +38,8 @@ object Actions {
     metadata: String,
     driverName: String,
     cfgString: Option[String],
-    cfgPath: Option[String]
+    cfgPath: Option[String],
+    dsProps: Option[Map[String, DataStreamCustomProps]]
   )
 
   case class DeviceMetadataWithId(
@@ -117,7 +117,6 @@ object Actions {
       }
     }
 
-    //val future: Future[String] = Future(task.toSingle("").toFuture.get)
     tasksQueue.put(id, future)
     id
   }
@@ -134,7 +133,9 @@ object Actions {
             dev.cfgString.foreach(cfg => drv.config.configureRaw(cfg)))(cfg => drv.config.configure(cfg))
           drv.controller.init()
           drv.controller.start()
-          DevicesManager.createDevice(dev.name, dev.description, Encodings.PDF, new URI(dev.metadata), drv)
+
+          DevicesManager.createDevice(dev.name, dev.description, Encodings.PDF, new URI(dev.metadata), drv,
+            dev.dsProps.getOrElse(Map.empty))
         }
         tryCreate.map(d => s"""{"device_id": "${d.id}"}""").toOption
       case _ =>
